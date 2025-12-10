@@ -1,0 +1,10 @@
+requests
+pandas
+torch
+langsmith
+langchain-huggingface
+langchain-text-splitters
+langchain-chroma
+langchain-core
+pandas
+gradio

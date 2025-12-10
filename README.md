@@ -1,15 +1,14 @@
+HEAD
 ---
-title: Medical Qa Chatbot
-emoji: 💬
-colorFrom: yellow
+title: Medical Rag Chatbot Streamlit
+emoji: 🐠
+colorFrom: purple
 colorTo: purple
-sdk: gradio
-sdk_version: 5.42.0
-app_file: app.py
+sdk: docker
 pinned: false
-hf_oauth: true
-hf_oauth_scopes:
-- inference-api
+license: apache-2.0
+short_description: A RAG app to answer all your medical questions!
 ---
-
-An example chatbot using [Gradio](https://gradio.app), [`huggingface_hub`](https://huggingface.co/docs/huggingface_hub/v0.22.2/en/index), and the [Hugging Face Inference API](https://huggingface.co/docs/api-inference/index).
+=======
+# medical-rag-app-streamlit
+aeb5b7d3e36361c9f323c171ec586494f659e3cd

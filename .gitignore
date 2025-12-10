@@ -1,0 +1,5 @@
+vector_databases/
+*.bin
+*.sqlite3
+*.pickle
+*.pkl
