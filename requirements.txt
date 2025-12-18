@@ -7,4 +7,4 @@ langchain-text-splitters
 langchain-chroma
 langchain-core
 pandas
-gradio
+streamlit

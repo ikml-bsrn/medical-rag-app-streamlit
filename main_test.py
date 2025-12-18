@@ -42,7 +42,7 @@ async def run_streamlit_app():
             os.environ["LANGSMITH_ENDPOINT"] = "https://eu.smith.langchain.com"
             os.environ["LANGCHAIN_PROJECT"] = "medical-qa-chatbot"
             os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    
+
     # Initialise session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -67,7 +67,7 @@ async def run_streamlit_app():
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
-    
+
         with st.chat_message("assistant"):
             if "rag_chain" in st.session_state: # check if RAG chain is initialised
                 response_placeholder = st.empty()
