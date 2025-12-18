@@ -53,6 +53,8 @@ def initialise_rag_chain(hf_embedding_model_name="NeuML/pubmedbert-base-embeddin
 
     return rag_chain
 
+
+
 async def rag_retrieve_by_query(rag_chain, query, hf_embedding_model_name="NeuML/pubmedbert-base-embeddings", k=3):
     """
     This function retrieves the top-k relevant documents from a vector store based on the input query 
