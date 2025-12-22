@@ -6,7 +6,7 @@ if os.path.exists(".env"):
 import asyncio # for async support
 import streamlit as st
 
-from rag_retrieve import initialise_rag_chain, rag_retrieve_by_query
+from rag_retrieve import initialise_embedding_model, load_vector_store, create_retriever, create_prompt_template, initialise_llm, create_rag_chain, invoke_rag_by_query
 
 async def run_streamlit_app():
     st.set_page_config(
@@ -53,7 +53,19 @@ async def run_streamlit_app():
     if "rag_chain" not in st.session_state and langchain_api_key and hf_api_key:
         os.environ["LANGCHAIN_API_KEY"] = langchain_api_key
         os.environ["HUGGING_FACE_API_KEY"] = hf_api_key
-        st.session_state.rag_chain = initialise_rag_chain() # initialise RAG chain
+
+        embedding_model = initialise_embedding_model()  # initialise embedding model
+        # load vector store
+        vector_store = load_vector_store(
+            embedding_model, 
+            collection_name="medquad_colllection", 
+            persist_directory="medquad_chroma_db_2"
+            )  
+        retriever = create_retriever(vector_store, k=3) # initialise retriever
+        prompt = create_prompt_template() # initialise prompt template
+        hf_chat_model = initialise_llm()  # initialise Hugging Face LLM
+
+        st.session_state.rag_chain = create_rag_chain(retriever, prompt, hf_chat_model) # initialise RAG chain
     else:
         st.info("Please enter your LangChain and Hugging Face API keys to initialise the RAG chain.")
 
@@ -73,13 +85,17 @@ async def run_streamlit_app():
                 response_placeholder = st.empty()
                 full_response = ""
 
-                # initiate async response from the RAG chain
-                async for response_chunk in rag_retrieve_by_query(
-                    st.session_state.rag_chain,
-                    query=user_input
-                ):
-                    full_response += response_chunk
-                    response_placeholder.markdown(full_response + " ")
+                try:
+                    # initiate async response from the RAG chain
+                    async for response_chunk in invoke_rag_by_query(
+                        st.session_state.rag_chain,
+                        query=user_input
+                    ):
+                        full_response += response_chunk
+                        response_placeholder.markdown(full_response + " ")
+                except Exception as e:
+                    st.error(f"Error during RAG chain invocation: {e}")
+                    full_response = "An error occurred while processing your request."
 
         st.session_state.messages.append({"role":"assistant", "content": full_response})
 

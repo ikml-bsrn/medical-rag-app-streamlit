@@ -1,25 +1,68 @@
-def initialise_rag_chain(hf_embedding_model_name="NeuML/pubmedbert-base-embeddings", k=3):
-    from langchain_chroma import Chroma
-    from langchain_core.runnables import RunnablePassthrough
-    from langchain_core.prompts import ChatPromptTemplate
-    from langchain_core.output_parsers import StrOutputParser
-    from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint, ChatHuggingFace
+def initialise_embedding_model(model_name="NeuML/pubmedbert-base-embeddings"):
+    """
+    Initialises a HuggingFace embedding model.
 
-    # initialise HuggingFace embedding model for embeddings
-    embeddings = HuggingFaceEmbeddings(model_name=hf_embedding_model_name)
+    Args:
+        model_name (str): The name of the HuggingFace embedding model to use. Defaults to "NeuML/pubmedbert-base-embeddings".
+    """
+    from langchain_huggingface import HuggingFaceEmbeddings
 
-    # load the existing Chroma vector store
-    vector_store = Chroma(
-        collection_name="medquad_collection",
-        persist_directory="medquad_chroma_db_2",
-        embedding_function=embeddings
-    )
+    try:
+        embedding = HuggingFaceEmbeddings(model_name=model_name)
 
-    # initialise retriever from the vector store
-    retriever = vector_store.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": k})
+    except Exception as e:
+        raise ValueError(f"Error initializing embedding model: {e}")
     
+    return embedding
+
+def load_vector_store(embedding_model, collection_name="medquad_collection", persist_directory="./medquad_chroma_db_2"):
+    """
+    Loads the Chroma vector store.
+
+    Args:
+        embedding_model: The embedding model to use for the vector store.
+    """
+    from langchain_chroma import Chroma
+    
+    try:
+        vector_store = Chroma(
+            embedding_function=embedding_model,
+            collection_name=collection_name,
+            persist_directory=persist_directory
+        )
+    except Exception as e:
+        raise ValueError(f"Error loading vector store: {e}")
+    
+    return vector_store
+
+def create_retriever(vector_store, k=3):
+    """
+    Creates a retriever from the vector store.
+    
+    Args:
+        vector_store: The vector store to create the retriever from.
+        k (int): The number of top relevant documents to retrieve.
+    """
+
+    try:
+        retriever = vector_store.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": k}
+        )
+    except Exception as e:
+        raise ValueError(f"Error initializing retriever: {e}")
+    
+    return retriever
+
+def create_prompt_template():
+    """
+    Creates a prompt template for the RAG chain.
+
+    Returns:
+        prompt (ChatPromptTemplate): The created prompt template.
+    """
+    from langchain_core.prompts import ChatPromptTemplate
+
     # create the prompt template
     template = """
                 You are a helpful medical assistant. Your job is to use the provided context to answer the question as accurately as possible.
@@ -34,14 +77,48 @@ def initialise_rag_chain(hf_embedding_model_name="NeuML/pubmedbert-base-embeddin
 
     # initiate the prompt using ChatPromptTemple
     prompt = ChatPromptTemplate.from_template(template)
+
+    return prompt
+
+def initialise_llm(repo_id="openai/gpt-oss-20b", provider="together"):
+    """
+    Initialises a HuggingFace LLM endpoint.
+
+    Args:
+        repo_id (str): The repository ID of the HuggingFace model.
+
+    Returns:
+        hf_chat_model (ChatHuggingFace): The initialised HuggingFace chat model.
+    """
+    from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+
+    try:
+        # initialise the base LLM model
+        hf_llm_base = HuggingFaceEndpoint(
+            repo_id=repo_id,
+            provider=provider
+        )
+    except Exception as e:
+        raise ValueError(f"Error initialising HuggingFace LLM: {e}")
     
-    # initialise the base LLM model
-    hf_llm_base = HuggingFaceEndpoint(
-        repo_id="openai/gpt-oss-20b",
-        provider="together"
-    )
     # wrap the model with Chat model class
     hf_chat_model = ChatHuggingFace(llm=hf_llm_base)
+
+    return hf_chat_model
+
+def create_rag_chain(retriever, prompt, hf_chat_model):
+    """
+    Initialises a LangChain RAG chain.
+
+    Args:
+        hf_embedding_model_name (str): The name of the HuggingFace embedding model to use.
+        k (int): The number of top relevant documents to retrieve.
+
+    Returns:
+        rag_chain (LangChain): The initialised RAG chain.
+    """
+    from langchain_core.runnables import RunnablePassthrough
+    from langchain_core.output_parsers import StrOutputParser
 
     # create the RAG chain with LCEL
     rag_chain = (
@@ -53,20 +130,17 @@ def initialise_rag_chain(hf_embedding_model_name="NeuML/pubmedbert-base-embeddin
 
     return rag_chain
 
-
-
-async def rag_retrieve_by_query(rag_chain, query, hf_embedding_model_name="NeuML/pubmedbert-base-embeddings", k=3):
+async def invoke_rag_by_query(rag_chain, query):
     """
-    This function retrieves the top-k relevant documents from a vector store based on the input query 
+    This function retrieves the relevant documents from a vector store based on the input query 
     and streams the response generated by the RAG chain.
 
     Args:
+        rag_chain (LangChain): The RAG chain to be used for retrieval and response generation.
         query (str): The input query for which relevant documents are to be retrieved.
-        hf_embedding_model_name (str): The name of the HuggingFace embedding model to use.
-        k (int): The number of top relevant documents to retrieve.
-    
+
     Returns:
-        str: The response generated by the RAG chain based on the retrieved documents.
+        chunk (str): The streamed response from the RAG chain.
     """
     # stream the RAG chain with the input query
     async for chunk in rag_chain.astream(query):

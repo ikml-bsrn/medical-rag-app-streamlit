@@ -8,3 +8,5 @@ langchain-chroma
 langchain-core
 pandas
 streamlit
+pytest
+pytest-asyncio
