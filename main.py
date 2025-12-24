@@ -37,11 +37,7 @@ async def run_streamlit_app():
             st.session_state.messages = []
             st.session_state.input_items = []
             st.rerun()
-
-        if st.checkbox("Enable LangSmith Tracing"):
-            os.environ["LANGSMITH_ENDPOINT"] = "https://eu.smith.langchain.com"
-            os.environ["LANGCHAIN_PROJECT"] = "medical-qa-chatbot"
-            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            
     
     # Initialise session state
     if "messages" not in st.session_state:
@@ -53,19 +49,27 @@ async def run_streamlit_app():
     if "rag_chain" not in st.session_state and langchain_api_key and hf_api_key:
         os.environ["LANGCHAIN_API_KEY"] = langchain_api_key
         os.environ["HUGGING_FACE_API_KEY"] = hf_api_key
+        os.environ["LANGSMITH_ENDPOINT"] = "https://eu.api.smith.langchain.com"
+        os.environ["LANGCHAIN_PROJECT"] = "medical-qa-chatbot"
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
 
-        embedding_model = initialise_embedding_model()  # initialise embedding model
-        # load vector store
-        vector_store = load_vector_store(
-            embedding_model, 
-            collection_name="medquad_colllection", 
-            persist_directory="medquad_chroma_db_2"
-            )  
-        retriever = create_retriever(vector_store, k=3) # initialise retriever
-        prompt = create_prompt_template() # initialise prompt template
-        hf_chat_model = initialise_llm()  # initialise Hugging Face LLM
+        try:
+            embedding_model = initialise_embedding_model()  # initialise embedding model
+            # load vector store
+            vector_store = load_vector_store(
+                embedding_model, 
+                collection_name="medquad_collection", 
+                persist_directory="medquad_chroma_db_2"
+                ) 
+            
+            retriever = create_retriever(vector_store, k=3) # create retriever
+            prompt = create_prompt_template() # initialise prompt template
+            hf_chat_model = initialise_llm(repo_id="openai/gpt-oss-20b", provider="together")  # initialise Hugging Face LLM
 
-        st.session_state.rag_chain = create_rag_chain(retriever, prompt, hf_chat_model) # initialise RAG chain
+            st.session_state.rag_chain = create_rag_chain(retriever, prompt, hf_chat_model) # initialise RAG chain
+        
+        except Exception as e:
+            st.error(f"Error initialising RAG chain: {e}")
     else:
         st.info("Please enter your LangChain and Hugging Face API keys to initialise the RAG chain.")
 

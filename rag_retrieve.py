@@ -8,14 +8,14 @@ def initialise_embedding_model(model_name="NeuML/pubmedbert-base-embeddings"):
     from langchain_huggingface import HuggingFaceEmbeddings
 
     try:
-        embedding = HuggingFaceEmbeddings(model_name=model_name)
+        embeddings = HuggingFaceEmbeddings(model_name=model_name)
 
     except Exception as e:
         raise ValueError(f"Error initializing embedding model: {e}")
     
-    return embedding
+    return embeddings
 
-def load_vector_store(embedding_model, collection_name="medquad_collection", persist_directory="./medquad_chroma_db_2"):
+def load_vector_store(embedding_model, collection_name="medquad_collection", persist_directory="medquad_chroma_db_2"):
     """
     Loads the Chroma vector store.
 
@@ -65,12 +65,12 @@ def create_prompt_template():
 
     # create the prompt template
     template = """
-                You are a helpful medical assistant. Your job is to use the provided context to answer the question as accurately as possible.
-                If the context does not contain the answer, respond politely with "I'm sorry, I do not currently have that information."
+                You are a helpful medical assistant. Your job is to answer the QUESTION as accurately as possible STRICTLY using the provided CONTEXT.
+                If the CONTEXT does not provide relevant answers to the QUESTION, respond politely with "I'm sorry, I do not currently have that information."
 
-                Question: {question}
+                QUESTION: {question}
 
-                Context: {context}
+                CONTEXT: {context}
 
                 Answer:
                 """
@@ -111,8 +111,9 @@ def create_rag_chain(retriever, prompt, hf_chat_model):
     Initialises a LangChain RAG chain.
 
     Args:
-        hf_embedding_model_name (str): The name of the HuggingFace embedding model to use.
-        k (int): The number of top relevant documents to retrieve.
+        retriever: The retriever to use for retrieving relevant documents.
+        prompt: The prompt template to use for generating the prompt.
+        hf_chat_model: The HuggingFace chat model to use for generating responses.
 
     Returns:
         rag_chain (LangChain): The initialised RAG chain.
@@ -122,7 +123,10 @@ def create_rag_chain(retriever, prompt, hf_chat_model):
 
     # create the RAG chain with LCEL
     rag_chain = (
-        {"context": retriever, "question": RunnablePassthrough()} # retrieves the context
+        {
+            "context": lambda query: '\n\n'.join(doc.page_content for doc in retriever.invoke(query)),
+            "question": RunnablePassthrough()
+        } # retrieves the context
         | prompt                                                  # creates the prompt with the context
         | hf_chat_model                                           # calls the LLM
         | StrOutputParser()
