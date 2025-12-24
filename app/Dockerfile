@@ -8,6 +8,7 @@ ENV STREAMLIT_BROWSER_GATHER_USAGE_STAT=false
 COPY main.py .
 COPY rag_retrieve.py .
 COPY requirements.txt .
+COPY medquad_chroma_db_2 ./medquad_chroma_db_2
 
 RUN pip install --no-cache-dir -r requirements.txt
 
