@@ -3,3 +3,6 @@ vector_databases/
 *.sqlite3
 *.pickle
 *.pkl
+
+.env
+.env.local

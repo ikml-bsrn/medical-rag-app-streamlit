@@ -10,3 +10,5 @@ pandas
 streamlit
 pytest
 pytest-asyncio
+fastapi
+python-dotenv
