@@ -2,6 +2,7 @@ requests
 pandas
 torch
 langsmith
+sentence-transformers
 langchain-huggingface
 langchain-text-splitters
 langchain-chroma
