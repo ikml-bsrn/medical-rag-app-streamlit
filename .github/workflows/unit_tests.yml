@@ -1,6 +1,6 @@
 name: Run Python Tests
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   test:
@@ -17,7 +17,7 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pip install -r requirements.txt
+        pip install -r app/requirements.txt
 
     - name: Run pytest
       run: pytest app/
