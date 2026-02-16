@@ -20,4 +20,6 @@ jobs:
         pip install -r app/requirements.txt
 
     - name: Run pytest
+      env:
+        HUGGING_FACE_API_KEY: ${{ secrets.HUGGING_FACE_API_KEY }}
       run: pytest app/
